@@ -120,15 +120,12 @@ if __name__ == '__main__':
 
     #trainloader,testloader,classes = dataloader.load_MNIST(4)
 
-    loaders, w_class, class_encoding = dataloader.get_data_loaders(camvid_dataset,6,6,6)
+    loaders, w_class, class_encoding = dataloader.get_data_loaders(camvid_dataset,2,2,2)
     trainloader, valloader, testloader = loaders
 
     # optimizer = optim.Adam(net.parameters(), lr=0.0005,betas=(0.9,0.99))
 
     # criterion = nn.CrossEntropyLoss()
-
-
-
     
     #As in the paper
     optimizer = optim.SGD(net.parameters(), lr=1e-3,weight_decay=5e-4,momentum=0.9)
@@ -160,8 +157,10 @@ if __name__ == '__main__':
         
     trainer = train.Trainer(criterion,optimizer,net)
 
-    if os.path.exists(current_analysis_name):
-        latest_checkpoint = newest(current_analysis_name+"/Checkpoints")
+    chkpt_path = current_analysis_name+"/Checkpoints"
+
+    if os.path.exists(chkpt_path):
+        latest_checkpoint = newest(chkpt_path)
         trainer.load_checkpoint(latest_checkpoint)
         trainer.epoch = int(os.path.basename(os.path.splitext(latest_checkpoint)[0])[5:])
         optimizer = optim.SGD(trainer.model.parameters(), lr=1e-1,weight_decay=5e-4,momentum=0.9)

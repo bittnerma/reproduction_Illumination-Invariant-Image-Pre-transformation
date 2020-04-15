@@ -5,13 +5,14 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{f7250a2a-fada-4c56-ac92-192deb6cf07e}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>PytorchPipeline.py</StartupFile>
+    <StartupFile>main.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <InterpreterId />
+    <TestFramework>Pytest</TestFramework>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
   <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
@@ -29,41 +30,26 @@
     <Compile Include="dl_logger.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="LightningTrial.py">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="metrics.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="metric\accuracy.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="metric\confusionmatrix.py" />
-    <Compile Include="metric\iou.py" />
-    <Compile Include="metric\metric.py" />
-    <Compile Include="metric\__init__.py" />
     <Compile Include="models.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="PytorchPipeline.py" />
+    <Compile Include="main.py" />
     <Compile Include="test.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="train.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="transforms.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="data\" />
-    <Folder Include="metric\" />
-    <Folder Include="metric\__pycache__\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="data\README.md" />
-    <Content Include="metric\__pycache__\confusionmatrix.cpython-37.pyc" />
-    <Content Include="metric\__pycache__\iou.cpython-37.pyc" />
-    <Content Include="metric\__pycache__\metric.cpython-37.pyc" />
-    <Content Include="metric\__pycache__\__init__.cpython-37.pyc" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
 </Project>

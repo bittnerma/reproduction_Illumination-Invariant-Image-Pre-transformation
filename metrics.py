@@ -91,11 +91,9 @@ class averager(object):
 
 import torch
 import numpy as np
-from metric import metric
-from metric.confusionmatrix import ConfusionMatrix
 from sklearn import metrics as skmet
 
-class ConfMatrix(metric.Metric):
+class ConfMatrix(object):
     
 
     def __init__(self, num_classes, ignore_index=None):
