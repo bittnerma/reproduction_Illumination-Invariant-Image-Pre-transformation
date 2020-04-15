@@ -131,7 +131,7 @@ if __name__ == '__main__':
 
     
     #As in the paper
-    optimizer = optim.SGD(net.parameters(), lr=1e-1,weight_decay=5e-4,momentum=0.9)
+    optimizer = optim.SGD(net.parameters(), lr=1e-3,weight_decay=5e-4,momentum=0.9)
     #optimizer = optim.Adam(net.parameters(), lr=1e-3,betas=(0.9,0.99),weight_decay=5e-4)
     
         # Evaluation metric
