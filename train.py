@@ -86,7 +86,7 @@ class Trainer(object):
 
                         (inputs,labels) = self.sample
 
-                        self.current_batch_nr = 0
+                        self.current_batch_nr = 3
                 
                         self.training_step(inputs, labels,use_gpu)
                 

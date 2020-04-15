@@ -83,8 +83,8 @@ class AnalysisBuilder(train.training_observer):
             if trainer.epoch % step_size == step_size-1: 
                 ckpt_name = trainer.save_checkpoint(self.current_name)
 
-            for single_logger in self.loggers:
-                single_logger.close()        
+        for single_logger in self.loggers:
+            single_logger.close()        
         
         print("Epoch {} completed".format(trainer.epoch))
 
@@ -124,15 +124,17 @@ if __name__ == '__main__':
 
     #trainloader,testloader,classes = dataloader.load_MNIST(4)
 
-    loaders, w_class, class_encoding = dataloader.get_data_loaders(camvid_dataset,2,2,2)
+    loaders, w_class, class_encoding = dataloader.get_data_loaders(camvid_dataset,1,1,1)
     trainloader, valloader, testloader = loaders
 
     # optimizer = optim.Adam(net.parameters(), lr=0.0005,betas=(0.9,0.99))
 
     # criterion = nn.CrossEntropyLoss()
-    
+    lr = 1#1e-1
+    wd = 5e-4
+    momentum = 0.9
     #As in the paper
-    optimizer = optim.SGD(net.parameters(), lr=1e-3,weight_decay=5e-4,momentum=0.9)
+    optimizer = optim.SGD(net.parameters(), lr=lr,weight_decay=wd,momentum=momentum)
     #optimizer = optim.Adam(net.parameters(), lr=1e-3,betas=(0.9,0.99),weight_decay=5e-4)
     
         # Evaluation metric
@@ -161,7 +163,7 @@ if __name__ == '__main__':
     if single_sample:
         current_analysis_name += "_SingleSampleTest"
     
-    nr_epochs= 370
+    nr_epochs= 200
         
     trainer = train.Trainer(criterion,optimizer,net,single_sample=single_sample)
 
@@ -171,7 +173,7 @@ if __name__ == '__main__':
         latest_checkpoint = newest(chkpt_path)
         trainer.load_checkpoint(latest_checkpoint)
         trainer.epoch = int(os.path.basename(os.path.splitext(latest_checkpoint)[0])[5:])
-        optimizer = optim.SGD(trainer.model.parameters(), lr=1e-1,weight_decay=5e-4,momentum=0.9)
+        trainer.optimizer = optim.SGD(trainer.model.parameters(), lr=lr,weight_decay=wd,momentum=momentum)
 
     test_metrics = [metrics.ConfMatrix(len(class_encoding), ignore_index=ignore_index)]
 
