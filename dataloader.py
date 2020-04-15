@@ -37,6 +37,8 @@ dataset = "camvid"
 
 args.batch_size = 2
 
+from data.utils import median_freq_balancing
+
 def get_data_loaders(dataset,train_batch_size,test_batch_size,val_batch_size):
     print("\nLoading dataset...\n")
 
@@ -106,5 +108,22 @@ def get_data_loaders(dataset,train_batch_size,test_batch_size,val_batch_size):
     print("Validation dataset size:", len(val_set))
   
     class_weights = 0
+
+    # Get class weights from the selected weighing technique    
+    print("Computing class weights...")
+    print("(this can take a while depending on the dataset size)")
+    class_weights = 0  
+    
+    class_weights = median_freq_balancing(train_loader, num_classes)    
+
+    if class_weights is not None:
+        class_weights = torch.from_numpy(class_weights).float().to(device)
+        # Set the weight of the unlabeled class to 0
+        if args.ignore_unlabeled:
+            ignore_index = list(class_encoding).index('unlabeled')
+            class_weights[ignore_index] = 0
+
+    print("Class weights:", class_weights)
+
     return (train_loader, val_loader,
             test_loader), class_weights, class_encoding

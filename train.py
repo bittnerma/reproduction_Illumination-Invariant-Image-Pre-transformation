@@ -14,7 +14,7 @@ class TrainingState(Enum):
    
 class Trainer(object):
 
-    def __init__(self,criterion,optimizer,model,metrics=[]):
+    def __init__(self,criterion,optimizer,model,metrics=[],single_sample = False):
         self.criterion = criterion
         self.optimizer = optimizer
         self.model = model
@@ -24,6 +24,7 @@ class Trainer(object):
         self._observers = []
         self.metrics = metrics
         self.running_loss = averager()
+        self.single_sample = single_sample
         return super().__init__()
 
     def register_observer(self, observer):

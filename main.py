@@ -136,7 +136,7 @@ if __name__ == '__main__':
     ignore_index = list(class_encoding).index('unlabeled')
 
      #TODO: Find the right index
-    criterion = nn.CrossEntropyLoss(ignore_index=ignore_index)    
+    criterion = nn.CrossEntropyLoss(ignore_index=ignore_index,weight=w_class)    
 
     out_name = ""
 
