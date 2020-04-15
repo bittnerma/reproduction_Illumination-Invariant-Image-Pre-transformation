@@ -25,6 +25,7 @@ class Trainer(object):
         self.metrics = metrics
         self.running_loss = averager()
         self.single_sample = single_sample
+        self.sample = None
         return super().__init__()
 
     def register_observer(self, observer):
@@ -77,18 +78,36 @@ class Trainer(object):
                 self.notify_observer(TrainingState.Epoch_Started)
                 
                 self.running_loss.reset()
-            
-                for i, (inputs, labels) in enumerate(trainloader, 0):
-                    
-                    
-                    self.current_batch_nr = i
+
+                if self.single_sample:
+
+                        if self.sample == None:
+                            self.sample = next(iter(trainloader))
+
+                        (inputs,labels) = self.sample
+
+                        self.current_batch_nr = 0
                 
-                    self.training_step(inputs, labels,use_gpu)
+                        self.training_step(inputs, labels,use_gpu)
                 
-                    #running_loss.add(self.loss.item())    
+                        #running_loss.add(self.loss.item())    
         
-                    self.notify_observer(TrainingState.Batch_Completed)
-                    #self.log_loss(print_at, running_loss, writer) 
+                        self.notify_observer(TrainingState.Batch_Completed)
+                        #self.log_loss(print_at, running_loss, writer)                 
+
+                else:
+            
+                    for i, (inputs, labels) in enumerate(trainloader, 0):
+                    
+                    
+                        self.current_batch_nr = i
+                
+                        self.training_step(inputs, labels,use_gpu)
+                
+                        #running_loss.add(self.loss.item())    
+        
+                        self.notify_observer(TrainingState.Batch_Completed)
+                        #self.log_loss(print_at, running_loss, writer) 
 
                 self.notify_observer(TrainingState.Epoch_Completed)
 

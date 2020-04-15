@@ -19,12 +19,13 @@ import dataloader
 import numpy as np
 
 class AnalysisBuilder(train.training_observer):
-    def __init__(self, trainer,tester,current_analysis_name,loggers):
+    def __init__(self, trainer,tester,current_analysis_name,loggers,single_sample = False):
         super(AnalysisBuilder,self).__init__(trainer)               
         
         self.current_name = current_analysis_name
         self.loggers = loggers
         self.current_epoch = 0
+        self.single_sample = single_sample
 
     def log_test_results(self, epoch):
         for metric in tester.metrics:
@@ -60,27 +61,30 @@ class AnalysisBuilder(train.training_observer):
                     single_logger.log("Train/"+"Loss",trainer.running_loss.get_average(),(trainer.epoch-1) * trainer.total_batch_nr + trainer.current_batch_nr)
             trainer.running_loss.reset()
 
-            for metric in trainer.metrics:
-                for single_logger in self.loggers:
-                    single_logger.log("Train/"+metric.type(),metric.value(),(trainer.epoch-1) * trainer.total_batch_nr + trainer.current_batch_nr)
-                metric.reset()
-            print("Batch {} completed".format(trainer.current_batch_nr))
+            if not self.single_sample:
+                for metric in trainer.metrics:
+                    for single_logger in self.loggers:
+                        single_logger.log("Train/"+metric.type(),metric.value(),(trainer.epoch-1) * trainer.total_batch_nr + trainer.current_batch_nr)
+                    metric.reset()
+                print("Batch {} completed".format(trainer.current_batch_nr))
 
-            trainer.running_loss.reset()
+                trainer.running_loss.reset()
 
     def on_epoch_completed(self,trainer):
         self.current_epoch = trainer.epoch
-        use_gpu = next(trainer.model.parameters()).is_cuda         
 
-        tester.test_network(trainer.model,use_gpu,self.on_loss_calulcated)
-        self.log_test_results(trainer.epoch)
+        if not self.single_sample:
+            use_gpu = next(trainer.model.parameters()).is_cuda         
 
-        step_size = 5
-        if trainer.epoch % step_size == step_size-1: 
-            ckpt_name = trainer.save_checkpoint(self.current_name)
+            tester.test_network(trainer.model,use_gpu,self.on_loss_calulcated)
+            self.log_test_results(trainer.epoch)
 
-        for single_logger in self.loggers:
-            single_logger.close()        
+            step_size = 5
+            if trainer.epoch % step_size == step_size-1: 
+                ckpt_name = trainer.save_checkpoint(self.current_name)
+
+            for single_logger in self.loggers:
+                single_logger.close()        
         
         print("Epoch {} completed".format(trainer.epoch))
 
@@ -149,13 +153,17 @@ if __name__ == '__main__':
 
     out_name += type(criterion).__name__ 
 
+    single_sample = True
+
     #current_analysis_name = "run/"+datetime.now().strftime("%d%m%Y%H%M%S")     
     current_analysis_name = "run/"+out_name + "RGB"
 
+    if single_sample:
+        current_analysis_name += "_SingleSampleTest"
     
     nr_epochs= 370
         
-    trainer = train.Trainer(criterion,optimizer,net)
+    trainer = train.Trainer(criterion,optimizer,net,single_sample=single_sample)
 
     chkpt_path = current_analysis_name+"/Checkpoints"
 
@@ -171,7 +179,7 @@ if __name__ == '__main__':
 
     tester = test.Tester(testloader,criterion,test_metrics)
 
-    analysis_builder = AnalysisBuilder(trainer,tester,current_analysis_name,test_logger)
+    analysis_builder = AnalysisBuilder(trainer,tester,current_analysis_name,test_logger,single_sample=single_sample)
 
     trainer.run_epochs(trainloader,use_gpu,nr_epochs)
 
