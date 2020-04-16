@@ -56,7 +56,7 @@ class AnalysisBuilder(train.training_observer):
         
     def on_batch_completed(self,trainer):
         self.current_epoch = trainer.epoch
-        step_size = 3
+        step_size = 10
         if trainer.current_batch_nr % step_size == 0: 
             
             for single_logger in self.loggers:
@@ -77,13 +77,14 @@ class AnalysisBuilder(train.training_observer):
         use_gpu = next(trainer.model.parameters()).is_cuda         
 
         if not self.single_sample:
-            
 
+            step_size_save = 5
+            if trainer.epoch % step_size_save == step_size_save-1: 
+                ckpt_name = trainer.save_checkpoint(self.current_name)                
 
-
-            step_size = 5
+            step_size = 10
             if trainer.epoch % step_size == step_size-1: 
-                ckpt_name = trainer.save_checkpoint(self.current_name)
+                
                 tester.test_network(trainer.model,use_gpu,self.on_loss_calulcated)
                 self.log_test_results(trainer.epoch)
         else:
@@ -121,7 +122,7 @@ def newest(path):
 
 if __name__ == '__main__':    
 
-    single_sample = True
+    single_sample = False
 
     outputdir = os.path.dirname(os.path.abspath(__file__))
 
@@ -129,24 +130,22 @@ if __name__ == '__main__':
 
     use_gpu = torch.cuda.is_available()
 
-    net = OwnSegNet(3)
-    #net = SegNet(3,12)
+    #net = OwnSegNet(3)
+    net = SegNet(3,12)
 
     if use_gpu:
         net = net.cuda()
     trainer = None
     #trainloader,testloader,classes = dataloader.load_MNIST(4)
 
-    loaders, w_class, class_encoding,sets = dataloader.get_data_loaders(camvid_dataset,1,1,1,single_sample=single_sample)
+    loaders, w_class, class_encoding,sets = dataloader.get_data_loaders(camvid_dataset,4,4,4,single_sample=single_sample)
     trainloader, valloader, testloader = loaders        
     # optimizer = optim.Adam(net.parameters(), lr=0.0005,betas=(0.9,0.99))
 
     # criterion = nn.CrossEntropyLoss()
-    lr = 1e-2
-    wd = 0#5e-4 #Turning off regularization for debugging
+    lr = 1e-3
+    wd = 5e-4 #Turning off regularization for debugging
     momentum = 0.9
-
-
 
     #As in the paper
     optimizer = optim.SGD(net.parameters(), lr=lr,weight_decay=wd,momentum=momentum)
@@ -174,14 +173,12 @@ if __name__ == '__main__':
     
 
     #current_analysis_name = "run/"+datetime.now().strftime("%d%m%Y%H%M%S")     
-    current_analysis_name = "run/"+out_name + "RGB" + "OtherNet"
-
-    if single_sample:
-        current_analysis_name += "_SingleSampleTest"
-
-    current_analysis_name = "run/TmpTest"
+    current_analysis_name = "run/"+out_name + "_RGB" + "_OtherNet"
     
-    nr_epochs= 3000
+    if single_sample:
+        current_analysis_name += "_SingleSampleTest"    
+    
+    nr_epochs= 435
         
     if trainer is None:
         trainer = train.Trainer(criterion,optimizer,net,single_sample=single_sample)

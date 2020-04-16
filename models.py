@@ -131,13 +131,13 @@ class OwnSegNet(nn.Module):
 
         i = 0
         
-        for feature in vgg16.features:
+        for j,feature in enumerate(vgg16.features):
             if isinstance(feature,nn.Conv2d):
                 if vgg_like_layers[i].weight.shape == feature.weight.shape and vgg_like_layers[i].bias.shape == feature.bias.shape:
                     vgg_like_layers[i].weight = feature.weight
                     vgg_like_layers[i].bias = feature.bias
                     i += 1
-                    print("Initialized layer {}".format(i))
+                    print("Initialized layer {} from VGG {}".format(i,j))
                     if i >= len(vgg_like_layers):
                         break
         

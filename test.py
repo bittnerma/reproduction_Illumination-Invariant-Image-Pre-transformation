@@ -15,9 +15,9 @@ class Tester(object):
         if use_gpu:
             images = images.cuda()
             labels = labels.cuda()
-        outputs = net(images)
+        raw,outputs = net(images)
 
-        self.loss = self.criterion(outputs, labels)                
+        self.loss = self.criterion(raw, labels)                
 
         self.running_loss.add(self.loss.item())
 

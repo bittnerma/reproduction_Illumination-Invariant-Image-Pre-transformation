@@ -74,7 +74,7 @@ def get_data_loaders(dataset,train_batch_size,test_batch_size,val_batch_size,sin
 
     else:
         train_loader = data.DataLoader(
-            train_set_reduced,
+            train_set,
             batch_size=train_batch_size,
             shuffle=False,#Changed this 
             num_workers=args.workers)
