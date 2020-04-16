@@ -121,15 +121,21 @@ class ConfMatrix(object):
 
     def add(self, predicted, target):
 
+        self.shape = predicted.shape.copy()
+
         _, predicted = predicted.max(1)
 
         self.conf_metric += skmet.confusion_matrix(target.view(-1).cpu().numpy(),predicted.view(-1).cpu().numpy(),np.arange(0,self.num_classes)) 
+
+        
 
         #self.conf_metric.add(predicted.view(-1), target.view(-1))
 
     def get_mean_metrics(self):
 
-        conf_matrix = self.conf_metric
+        print("There are {} Test examples in the Confusion Matrix (This should be an even number)".format(self.conf_metric.sum()/self.shape))
+
+        conf_matrix = self.conf_metric.copy()
 
         if self.ignore_index is not None:
             for index in self.ignore_index:
@@ -160,7 +166,7 @@ class ConfMatrix(object):
         return out_dict
 
     def get_per_class_accuracy(self):
-        conf_matrix = self.conf_metric
+        conf_matrix = self.conf_metric.copy()
 
         if self.ignore_index is not None:
             for index in self.ignore_index:
@@ -172,7 +178,7 @@ class ConfMatrix(object):
 
         # Just in case we get a division by 0, ignore/hide the error
         with np.errstate(divide='ignore', invalid='ignore'):            
-            accuracy = true_positive  / np.sum(conf_matrix)
+            accuracy = true_positive  / conf_matrix.sum(axis=0)
 
         out_dict = {}
         for i,val in enumerate(accuracy):

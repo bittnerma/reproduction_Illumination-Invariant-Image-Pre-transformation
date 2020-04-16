@@ -117,6 +117,7 @@ def get_data_loaders(dataset,train_batch_size,test_batch_size,val_batch_size,sin
     # Print information for debugging
     print("Number of classes to predict:", num_classes)
     print("Train dataset size:", len(train_set))
+    print("Test dataset size:", len(test_set))
     print("Validation dataset size:", len(val_set))
   
     class_weights = 0
