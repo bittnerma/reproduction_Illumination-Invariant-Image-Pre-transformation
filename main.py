@@ -137,7 +137,7 @@ def generate_folder_name(criterion, optimizer, single_sample):
     
     
     #current_analysis_name = "run/"+datetime.now().strftime("%d%m%Y%H%M%S")     
-    current_analysis_name = "run/"+out_name + "_RGB" + "_OtherNet"
+    current_analysis_name = "run/"+out_name + "_RGB" + "_2"
     
     if single_sample:
         current_analysis_name += "_SingleSampleTest"
