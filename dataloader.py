@@ -39,7 +39,7 @@ args.batch_size = 2
 
 from data.utils import median_freq_balancing
 
-def get_data_loaders(dataset,train_batch_size,test_batch_size,val_batch_size):
+def get_data_loaders(dataset,train_batch_size,test_batch_size,val_batch_size,single_sample=False):
     print("\nLoading dataset...\n")
 
     print("Selected dataset:", dataset)
@@ -61,11 +61,23 @@ def get_data_loaders(dataset,train_batch_size,test_batch_size,val_batch_size):
         args.dataset_dir,
         transform=image_transform,
         label_transform=label_transform)
-    train_loader = data.DataLoader(
-        train_set,
-        batch_size=train_batch_size,
-        shuffle=True,
-        num_workers=args.workers)
+
+    if single_sample:
+        print("Reducing Training set to single batch of size {}".format(train_batch_size))
+        train_set_reduced = torch.utils.data.Subset(train_set, list(range(0,train_batch_size)))  
+    
+        train_loader = data.DataLoader(
+            train_set_reduced,
+            batch_size=train_batch_size,
+            shuffle=False,#Changed this 
+            num_workers=args.workers)
+
+    else:
+        train_loader = data.DataLoader(
+            train_set_reduced,
+            batch_size=train_batch_size,
+            shuffle=False,#Changed this 
+            num_workers=args.workers)
 
     # Load the validation set as tensors
     val_set = dataset(
@@ -126,4 +138,4 @@ def get_data_loaders(dataset,train_batch_size,test_batch_size,val_batch_size):
     print("Class weights:", class_weights)
 
     return (train_loader, val_loader,
-            test_loader), class_weights, class_encoding
+            test_loader), class_weights, class_encoding,(train_set,val_set,test_set)

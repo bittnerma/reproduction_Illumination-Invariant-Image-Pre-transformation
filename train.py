@@ -4,6 +4,8 @@ import torchvision.transforms as transforms
 from enum import Enum
 import os
 from metrics import averager
+import numpy as np
+import torch.nn as nn
 
 class TrainingState(Enum):
     Epoch_Started = 1
@@ -25,7 +27,7 @@ class Trainer(object):
         self.metrics = metrics
         self.running_loss = averager()
         self.single_sample = single_sample
-        self.sample = None
+        self.sample = None        
         return super().__init__()
 
     def register_observer(self, observer):
@@ -39,17 +41,19 @@ class Trainer(object):
         if use_gpu:
             inputs = inputs.cuda()
             labels = labels.cuda()
+
+        labels = labels.to(dtype=torch.long)
         # zero the parameter gradients
         self.optimizer.zero_grad()
         # # forward + backward + optimize
-        outputs = self.model(inputs)
+        raw,outputs = self.model(inputs)
 
         #This computes the loss now twice, which is a bit unhandy
-        for metric in self.metrics:
-            metric.add(outputs.detach(),labels.detach())
+        # for metric in self.metrics:
+        #     metric.add(outputs.detach(),labels.detach())
 
-        self.loss = self.criterion(outputs, labels)        
-        self.loss.backward()
+        self.loss = self.criterion(raw, labels)                
+        self.loss.backward()             
 
         self.running_loss.add(self.loss.item())
 
@@ -82,11 +86,16 @@ class Trainer(object):
                 if self.single_sample:
 
                         if self.sample == None:
-                            self.sample = next(iter(trainloader))
+                            self.sample = next(iter(trainloader))                            
 
-                        (inputs,labels) = self.sample
 
-                        self.current_batch_nr = 3
+                        (inputs,labels) = self.sample                                
+
+                        #Hack Create a single label
+                        # labels = torch.zeros_like(labels)
+                        # labels += 1
+
+                        self.current_batch_nr = 0
                 
                         self.training_step(inputs, labels,use_gpu)
                 

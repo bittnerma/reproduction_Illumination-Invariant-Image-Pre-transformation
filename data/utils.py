@@ -170,6 +170,6 @@ def median_freq_balancing(dataloader, num_classes):
 
     # Compute the frequency and its median
     freq = class_count / total
-    med = np.median(freq)
+    med = np.nanmedian(freq)
 
-    return med / freq
+    return np.nan_to_num(med / freq,0)

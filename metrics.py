@@ -15,7 +15,10 @@ class averager(object):
         self.counter += 1
 
     def get_average(self):
-        return self.running_value/self.counter
+        if self.counter < 1:
+            return 0
+        else:
+            return self.running_value/self.counter
 
 #class metric:
 #    def add(self,outputs,labels):

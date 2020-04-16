@@ -6,6 +6,8 @@ import torch.nn as nn
 
 from models import OwnSegNet
 
+from models import SegNet
+
 import metrics
 
 import train
@@ -58,13 +60,13 @@ class AnalysisBuilder(train.training_observer):
         if trainer.current_batch_nr % step_size == 0: 
             
             for single_logger in self.loggers:
-                    single_logger.log("Train/"+"Loss",trainer.running_loss.get_average(),(trainer.epoch-1) * trainer.total_batch_nr + trainer.current_batch_nr)
+                    single_logger.log("Train/"+"Loss",trainer.running_loss.get_average(),(trainer.epoch-1) * trainer.total_batch_nr + trainer.current_batch_nr + 1)
             trainer.running_loss.reset()
 
             if not self.single_sample:
                 for metric in trainer.metrics:
                     for single_logger in self.loggers:
-                        single_logger.log("Train/"+metric.type(),metric.value(),(trainer.epoch-1) * trainer.total_batch_nr + trainer.current_batch_nr)
+                        single_logger.log("Train/"+metric.type(),metric.value(),(trainer.epoch-1) * trainer.total_batch_nr + trainer.current_batch_nr + 1)
                     metric.reset()
                 print("Batch {} completed".format(trainer.current_batch_nr))
 
@@ -72,16 +74,24 @@ class AnalysisBuilder(train.training_observer):
 
     def on_epoch_completed(self,trainer):
         self.current_epoch = trainer.epoch
+        use_gpu = next(trainer.model.parameters()).is_cuda         
 
         if not self.single_sample:
-            use_gpu = next(trainer.model.parameters()).is_cuda         
+            
 
-            tester.test_network(trainer.model,use_gpu,self.on_loss_calulcated)
-            self.log_test_results(trainer.epoch)
+
 
             step_size = 5
             if trainer.epoch % step_size == step_size-1: 
                 ckpt_name = trainer.save_checkpoint(self.current_name)
+                tester.test_network(trainer.model,use_gpu,self.on_loss_calulcated)
+                self.log_test_results(trainer.epoch)
+        else:
+            step_size = 3000
+            if trainer.epoch % step_size == step_size-1: 
+                ckpt_name = trainer.save_checkpoint(self.current_name)
+                tester.test_network(trainer.model,use_gpu,self.on_loss_calulcated)
+                self.log_test_results(trainer.epoch)
 
         for single_logger in self.loggers:
             single_logger.close()        
@@ -111,6 +121,8 @@ def newest(path):
 
 if __name__ == '__main__':    
 
+    single_sample = True
+
     outputdir = os.path.dirname(os.path.abspath(__file__))
 
     os.chdir(outputdir)
@@ -118,21 +130,24 @@ if __name__ == '__main__':
     use_gpu = torch.cuda.is_available()
 
     net = OwnSegNet(3)
+    #net = SegNet(3,12)
 
     if use_gpu:
         net = net.cuda()
-
+    trainer = None
     #trainloader,testloader,classes = dataloader.load_MNIST(4)
 
-    loaders, w_class, class_encoding = dataloader.get_data_loaders(camvid_dataset,1,1,1)
-    trainloader, valloader, testloader = loaders
-
+    loaders, w_class, class_encoding,sets = dataloader.get_data_loaders(camvid_dataset,1,1,1,single_sample=single_sample)
+    trainloader, valloader, testloader = loaders        
     # optimizer = optim.Adam(net.parameters(), lr=0.0005,betas=(0.9,0.99))
 
     # criterion = nn.CrossEntropyLoss()
-    lr = 1#1e-1
-    wd = 5e-4
+    lr = 1e-2
+    wd = 0#5e-4 #Turning off regularization for debugging
     momentum = 0.9
+
+
+
     #As in the paper
     optimizer = optim.SGD(net.parameters(), lr=lr,weight_decay=wd,momentum=momentum)
     #optimizer = optim.Adam(net.parameters(), lr=1e-3,betas=(0.9,0.99),weight_decay=5e-4)
@@ -141,8 +156,9 @@ if __name__ == '__main__':
 
     ignore_index = list(class_encoding).index('unlabeled')
 
-     #TODO: Find the right index
+    #TODO: Find the right index
     criterion = nn.CrossEntropyLoss(ignore_index=ignore_index,weight=w_class)    
+    #criterion = nn.MSELoss()
 
     out_name = ""
 
@@ -155,17 +171,27 @@ if __name__ == '__main__':
 
     out_name += type(criterion).__name__ 
 
-    single_sample = True
+    
 
     #current_analysis_name = "run/"+datetime.now().strftime("%d%m%Y%H%M%S")     
-    current_analysis_name = "run/"+out_name + "RGB"
+    current_analysis_name = "run/"+out_name + "RGB" + "OtherNet"
 
     if single_sample:
         current_analysis_name += "_SingleSampleTest"
+
+    current_analysis_name = "run/TmpTest"
     
-    nr_epochs= 200
+    nr_epochs= 3000
         
-    trainer = train.Trainer(criterion,optimizer,net,single_sample=single_sample)
+    if trainer is None:
+        trainer = train.Trainer(criterion,optimizer,net,single_sample=single_sample)
+    else:
+        trainer.optimizer = optimizer
+        trainer.criterion = criterion
+        trainer.net = net
+        trainer.epoch = 0
+        trainer.running_loss.reset()
+        
 
     chkpt_path = current_analysis_name+"/Checkpoints"
 
@@ -185,8 +211,8 @@ if __name__ == '__main__':
 
     trainer.run_epochs(trainloader,use_gpu,nr_epochs)
 
-    #trainer.load_checkpoint(ckpt_name)
+        #trainer.load_checkpoint(ckpt_name)
 
-    #trainer.run_epochs(trainloader,use_gpu,nr_epochs,writer)
+        #trainer.run_epochs(trainloader,use_gpu,nr_epochs,writer)
 
   
