@@ -121,7 +121,7 @@ class ConfMatrix(object):
 
     def add(self, predicted, target):
 
-        self.shape = predicted.shape.copy()
+        self.shape = predicted.shape
 
         _, predicted = predicted.max(1)
 
@@ -133,7 +133,7 @@ class ConfMatrix(object):
 
     def get_mean_metrics(self):
 
-        print("There are {} Test examples in the Confusion Matrix (This should be an even number)".format(self.conf_metric.sum()/self.shape))
+        print("There are {} Test examples in the Confusion Matrix (This should be an even number)".format(self.conf_metric.sum()/self.shape.nelements()))
 
         conf_matrix = self.conf_metric.copy()
 
