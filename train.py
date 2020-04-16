@@ -67,7 +67,7 @@ class Trainer(object):
             idx = self.epoch * self.total_batch_nr + self.current_batch_nr
             writer.add_scalar('Train/loss',self.loss.item(),idx)
 
-    def run_epochs(self,trainloader,use_gpu,nr_epochs,writer = None):          
+    def run_epochs(self,trainloader,use_gpu,nr_epochs,writer = None,class_encoding=None):          
         
             print_at = 1000
 
@@ -107,6 +107,8 @@ class Trainer(object):
                 else:
             
                     for i, (inputs, labels) in enumerate(trainloader, 0):
+
+
                     
                     
                         self.current_batch_nr = i

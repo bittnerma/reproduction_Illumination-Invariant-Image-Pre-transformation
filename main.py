@@ -20,6 +20,8 @@ import dataloader
 
 import numpy as np
 
+import torchvision
+
 class AnalysisBuilder(train.training_observer):
     def __init__(self, trainer,tester,current_analysis_name,loggers,single_sample = False):
         super(AnalysisBuilder,self).__init__(trainer)               
@@ -120,6 +122,55 @@ def newest(path):
     paths = [os.path.join(path, basename) for basename in files]
     return max(paths, key=os.path.getctime)
 
+def generate_folder_name(criterion, optimizer, single_sample):
+    out_name = ""
+    
+    out_name += type(optimizer).__name__ + "_"
+    
+    
+    for key in optimizer.param_groups[0].keys():
+        if key not in 'params':
+            out_name +=  key+"_"+str(optimizer.param_groups[0][key]) + "_"
+    
+    out_name += type(criterion).__name__ 
+    
+    
+    
+    #current_analysis_name = "run/"+datetime.now().strftime("%d%m%Y%H%M%S")     
+    current_analysis_name = "run/"+out_name + "_RGB" + "_OtherNet"
+    
+    if single_sample:
+        current_analysis_name += "_SingleSampleTest"
+    return current_analysis_name
+
+def image_tensor_to_image(img):
+    
+    to_pil = torchvision.transforms.ToPILImage()
+    pil_img = to_pil(img)
+
+    return pil_img
+   
+
+def label_tensor_to_image(lab,class_encoding):
+
+    to_pil = torchvision.transforms.ToPILImage()
+
+    out_img = torch.zeros([3,lab.shape[0],lab.shape[1]])
+
+    for j,k in enumerate(class_encoding):
+        # Get all indices for current class
+        pos = torch.where(lab == j)
+        col = class_encoding[k]
+        out_img[0,pos[0],pos[1]] = col[0]
+        out_img[1,pos[0],pos[1]] = col[1]
+        out_img[2,pos[0],pos[1]] = col[2]
+                                
+    
+    pil_img = to_pil(out_img)
+    return pil_img
+
+from matplotlib import pyplot as plt
+
 if __name__ == '__main__':    
 
     single_sample = False
@@ -136,47 +187,27 @@ if __name__ == '__main__':
     if use_gpu:
         net = net.cuda()
     trainer = None
-    #trainloader,testloader,classes = dataloader.load_MNIST(4)
-
+    
     loaders, w_class, class_encoding,sets = dataloader.get_data_loaders(camvid_dataset,4,4,4,single_sample=single_sample)
-    trainloader, valloader, testloader = loaders        
-    # optimizer = optim.Adam(net.parameters(), lr=0.0005,betas=(0.9,0.99))
+    trainloader, valloader, testloader = loaders  
+    test_set,val_set,train_set = sets
 
-    # criterion = nn.CrossEntropyLoss()
+    label_tensor_to_image(test_set[0][1],class_encoding)
+
     lr = 1e-3
     wd = 5e-4 #Turning off regularization for debugging
     momentum = 0.9
 
     #As in the paper
     optimizer = optim.SGD(net.parameters(), lr=lr,weight_decay=wd,momentum=momentum)
-    #optimizer = optim.Adam(net.parameters(), lr=1e-3,betas=(0.9,0.99),weight_decay=5e-4)
     
-        # Evaluation metric
+    # Evaluation metric
 
     ignore_index = list(class_encoding).index('unlabeled')
-
-    #TODO: Find the right index
-    criterion = nn.CrossEntropyLoss(ignore_index=ignore_index,weight=w_class)    
-    #criterion = nn.MSELoss()
-
-    out_name = ""
-
-    out_name += type(optimizer).__name__ + "_"
     
+    criterion = nn.CrossEntropyLoss(ignore_index=ignore_index,weight=w_class)        
 
-    for key in optimizer.param_groups[0].keys():
-        if key not in 'params':
-            out_name +=  key+"_"+str(optimizer.param_groups[0][key]) + "_"
-
-    out_name += type(criterion).__name__ 
-
-    
-
-    #current_analysis_name = "run/"+datetime.now().strftime("%d%m%Y%H%M%S")     
-    current_analysis_name = "run/"+out_name + "_RGB" + "_OtherNet"
-    
-    if single_sample:
-        current_analysis_name += "_SingleSampleTest"    
+    current_analysis_name = generate_folder_name(criterion, optimizer, single_sample)    
     
     nr_epochs= 435
         
@@ -206,7 +237,7 @@ if __name__ == '__main__':
 
     analysis_builder = AnalysisBuilder(trainer,tester,current_analysis_name,test_logger,single_sample=single_sample)
 
-    trainer.run_epochs(trainloader,use_gpu,nr_epochs)
+    trainer.run_epochs(trainloader,use_gpu,nr_epochs,class_encoding=class_encoding)
 
         #trainer.load_checkpoint(ckpt_name)
 
