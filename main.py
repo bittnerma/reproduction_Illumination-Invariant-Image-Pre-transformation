@@ -22,6 +22,8 @@ import numpy as np
 
 import torchvision
 
+import pandas as pd
+
 class AnalysisBuilder(train.training_observer):
     def __init__(self, trainer,tester,current_analysis_name,loggers,single_sample = False):
         super(AnalysisBuilder,self).__init__(trainer)               
@@ -46,6 +48,7 @@ class AnalysisBuilder(train.training_observer):
                 os.mkdir(conf_mat_dir)
             mat_path = os.path.join(conf_mat_dir,"ConfMat_epoch{}".format(epoch))
             np.save(mat_path,metric.conf_metric)
+            pd.DataFrame(metric.conf_metric).to_csv(mat_path+".csv")
             metric.reset()
 
     #Maybe it's sufficient to calculate this at the same time as everything else
