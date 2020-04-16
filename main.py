@@ -174,6 +174,8 @@ def label_tensor_to_image(lab,class_encoding):
 
 from matplotlib import pyplot as plt
 
+import colortransforms as ctf
+
 if __name__ == '__main__':    
 
     single_sample = False
@@ -240,10 +242,8 @@ if __name__ == '__main__':
 
     analysis_builder = AnalysisBuilder(trainer,tester,current_analysis_name,test_logger,single_sample=single_sample)
 
-    trainer.run_epochs(trainloader,use_gpu,nr_epochs,class_encoding=class_encoding)
+    trainer.run_epochs(trainloader,use_gpu,nr_epochs,input_transform= ctf.madden_hs,alpha=0.5)
 
-        #trainer.load_checkpoint(ckpt_name)
 
-        #trainer.run_epochs(trainloader,use_gpu,nr_epochs,writer)
 
   

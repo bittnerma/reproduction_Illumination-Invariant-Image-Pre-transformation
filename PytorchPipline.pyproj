@@ -21,6 +21,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="args.py" />
+    <Compile Include="colortransforms.py" />
     <Compile Include="dataloader.py">
       <SubType>Code</SubType>
     </Compile>

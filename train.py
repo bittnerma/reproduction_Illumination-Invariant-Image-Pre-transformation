@@ -37,7 +37,11 @@ class Trainer(object):
         for observer in self._observers:
             observer.notify(self, *args, **kwargs)
 
-    def training_step(self,inputs, labels,use_gpu):        
+    def training_step(self,inputs, labels,use_gpu,input_transform=None,*args,**kwargs):        
+        
+        if input_transform is not None:
+            inputs = input_transform(inputs,*args,**kwargs)   
+        
         if use_gpu:
             inputs = inputs.cuda()
             labels = labels.cuda()
@@ -67,7 +71,7 @@ class Trainer(object):
             idx = self.epoch * self.total_batch_nr + self.current_batch_nr
             writer.add_scalar('Train/loss',self.loss.item(),idx)
 
-    def run_epochs(self,trainloader,use_gpu,nr_epochs,writer = None,class_encoding=None):          
+    def run_epochs(self,trainloader,use_gpu,nr_epochs,input_transform=None,*args,**kwargs):          
         
             print_at = 1000
 
@@ -113,7 +117,7 @@ class Trainer(object):
                     
                         self.current_batch_nr = i
                 
-                        self.training_step(inputs, labels,use_gpu)
+                        self.training_step(inputs, labels,use_gpu,input_transform,*args,**kwargs)
                 
                         #running_loss.add(self.loss.item())    
         
