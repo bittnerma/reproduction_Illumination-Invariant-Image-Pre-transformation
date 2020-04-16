@@ -107,8 +107,8 @@ class AnalysisBuilder(train.training_observer):
 
     def on_epoch_started(self,trainer):
         #self.current_epoch = trainer.epoch
-        tester.test_network(trainer.model,use_gpu,self.on_loss_calulcated)
-        self.log_test_results(trainer.epoch)
+        #tester.test_network(trainer.model,use_gpu,self.on_loss_calulcated)
+        #self.log_test_results(trainer.epoch)
         print("Epoch {} started".format(trainer.epoch))
                     
 
