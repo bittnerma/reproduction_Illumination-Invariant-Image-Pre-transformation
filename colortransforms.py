@@ -1,16 +1,29 @@
 import torch
+import numpy as np
+
+
 
 def madden(image,alpha):    
+    '''Madden Color transform recreated after http://www.robots.ox.ac.uk/~mobile/Papers/2014ICRA_maddern.pdf'''
     eps=1e-7
     
     madden = 0.5 + torch.log(image[:,1,:,:]+eps) - alpha * torch.log(image[:,2,:,:]+eps) - (1-alpha) * torch.log(image[:,0,:,:]+eps)
-    #Scale to 0 and 1
-    # madden += torch.abs(madden.min())
-    # madden /= madden.max()    
+   
     return madden.view([image.shape[0],1,image.shape[2],image.shape[3]])
 
-#Transform taken from: https://github.com/odegeasslbc/Differentiable-RGB-to-HSV-convertion-pytorch/blob/master/pytorch_hsv.py
+def madden_nan_rm(image,alpha):    
+    
+    
+    madden = 0.5 + torch.log(image[:,1,:,:]) - alpha * torch.log(image[:,2,:,:]) - (1-alpha) * torch.log(image[:,0,:,:])
+    
+    #Set all infs to zero maximum value
+    madden[madden == float("Inf")] = np.nanmax(madden[madden != np.inf]).item()
+
+    return madden.view([image.shape[0],1,image.shape[2],image.shape[3]])
+
+#
 def hsv(im):
+        ''' HSV Transform taken from: https://github.com/odegeasslbc/Differentiable-RGB-to-HSV-convertion-pytorch/blob/master/pytorch_hsv.py'''
         img = im * 0.5 + 0.5
         hue = torch.Tensor(im.shape[0], im.shape[2], im.shape[3]).to(im.device)
         eps=1e-7

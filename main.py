@@ -197,13 +197,15 @@ if __name__ == '__main__':
     trainloader, valloader, testloader = loaders  
     test_set,val_set,train_set = sets
 
-    label_tensor_to_image(test_set[0][1],class_encoding)
+    #image_tensor_to_image(test_set[0][0]).save("ImageExample.bmp")
+    #label_tensor_to_image(test_set[0][1],class_encoding).save("LabelExample.bmp")
+    #madden_img = ctf.madden_nan_rm(test_set[0][0].unsqueeze(0),0.5).squeeze(0)
+    #image_tensor_to_image(madden_img).save("MaddenNanImageExample.bmp")
 
     lr = 1e-3
-    wd = 5e-4 #Turning off regularization for debugging
+    wd = 5e-4 
     momentum = 0.9
-
-    #As in the paper
+    
     optimizer = optim.SGD(net.parameters(), lr=lr,weight_decay=wd,momentum=momentum)
     
     # Evaluation metric

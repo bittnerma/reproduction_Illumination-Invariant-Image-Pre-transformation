@@ -27,6 +27,9 @@ def load_MNIST(batch_size = 4):
 from PIL import Image
 
 import transforms as ext_transforms
+
+# Code taken from https://github.com/davidtvs/PyTorch-ENet
+
 from args import get_arguments
 
 args = get_arguments()
