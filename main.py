@@ -90,13 +90,13 @@ class AnalysisBuilder(train.training_observer):
             step_size = 10
             if trainer.epoch % step_size == step_size-1: 
                 
-                tester.test_network(trainer.model,use_gpu,self.on_loss_calulcated)
+                tester.test_network(trainer.model,use_gpu,self.on_loss_calulcated,input_transform= input_transform,alpha=0.5)
                 self.log_test_results(trainer.epoch)
         else:
             step_size = 3000
             if trainer.epoch % step_size == step_size-1: 
                 ckpt_name = trainer.save_checkpoint(self.current_name)
-                tester.test_network(trainer.model,use_gpu,self.on_loss_calulcated)
+                tester.test_network(trainer.model,use_gpu,self.on_loss_calulcated,input_transform= input_transform,alpha=0.5)
                 self.log_test_results(trainer.epoch)
 
         for single_logger in self.loggers:
@@ -125,7 +125,7 @@ def newest(path):
     paths = [os.path.join(path, basename) for basename in files]
     return max(paths, key=os.path.getctime)
 
-def generate_folder_name(criterion, optimizer, single_sample):
+def generate_folder_name(criterion, optimizer, single_sample,input_transform):
     out_name = ""
     
     out_name += type(optimizer).__name__ + "_"
@@ -135,13 +135,22 @@ def generate_folder_name(criterion, optimizer, single_sample):
         if key not in 'params':
             out_name +=  key+"_"+str(optimizer.param_groups[0][key]) + "_"
     
-    out_name += type(criterion).__name__ 
-    
+    out_name += type(criterion).__name__    
     
     
     #current_analysis_name = "run/"+datetime.now().strftime("%d%m%Y%H%M%S")     
-    current_analysis_name = "run/"+out_name + "_RGB" + "_2"
+    current_analysis_name = "run/"+out_name
+
+    if input_transform == None:
+        current_analysis_name += "_RGB"
+    elif input_transform == ctf.madden:
+        current_analysis_name += "_Madden"
+    elif input_transform == ctf.madden_hs:
+        current_analysis_name += "_Madden_HS"
     
+    #Change this
+    #current_analysis_name += "_OtherNet"
+
     if single_sample:
         current_analysis_name += "_SingleSampleTest"
     return current_analysis_name
@@ -186,65 +195,77 @@ if __name__ == '__main__':
 
     use_gpu = torch.cuda.is_available()
 
-    #net = OwnSegNet(3)
-    net = SegNet(3,12)
+    input_transform = None
 
-    if use_gpu:
-        net = net.cuda()
-    trainer = None
-    
-    loaders, w_class, class_encoding,sets = dataloader.get_data_loaders(camvid_dataset,4,4,4,single_sample=single_sample)
-    trainloader, valloader, testloader = loaders  
-    test_set,val_set,train_set = sets
+    for input_transform in [None]:
 
-    #image_tensor_to_image(test_set[0][0]).save("ImageExample.bmp")
-    #label_tensor_to_image(test_set[0][1],class_encoding).save("LabelExample.bmp")
-    #madden_img = ctf.madden_nan_rm(test_set[0][0].unsqueeze(0),0.5).squeeze(0)
-    #image_tensor_to_image(madden_img).save("MaddenNanImageExample.bmp")
+        input_size = 3
 
-    lr = 1e-3
-    wd = 5e-4 
-    momentum = 0.9
-    
-    optimizer = optim.SGD(net.parameters(), lr=lr,weight_decay=wd,momentum=momentum)
-    
-    # Evaluation metric
-
-    ignore_index = list(class_encoding).index('unlabeled')
-    
-    criterion = nn.CrossEntropyLoss(ignore_index=ignore_index,weight=w_class)        
-
-    current_analysis_name = generate_folder_name(criterion, optimizer, single_sample)    
-    
-    nr_epochs= 435
+        if input_transform == ctf.madden:
+            input_size = 1
         
-    if trainer is None:
-        trainer = train.Trainer(criterion,optimizer,net,single_sample=single_sample)
-    else:
-        trainer.optimizer = optimizer
-        trainer.criterion = criterion
-        trainer.net = net
-        trainer.epoch = 0
-        trainer.running_loss.reset()
+        net = OwnSegNet(input_size)
+        #net = SegNet(input_size,12)
+
+        if use_gpu:
+            net = net.cuda()
+        trainer = None
         
+        loaders, w_class, class_encoding,sets = dataloader.get_data_loaders(camvid_dataset,4,4,4,single_sample=single_sample)
+        trainloader, valloader, testloader = loaders  
+        test_set,val_set,train_set = sets
 
-    chkpt_path = current_analysis_name+"/Checkpoints"
+        label_tensor_to_image(test_set[0][1],class_encoding)
 
-    if os.path.exists(chkpt_path):
-        latest_checkpoint = newest(chkpt_path)
-        trainer.load_checkpoint(latest_checkpoint)
-        trainer.epoch = int(os.path.basename(os.path.splitext(latest_checkpoint)[0])[5:])
-        trainer.optimizer = optim.SGD(trainer.model.parameters(), lr=lr,weight_decay=wd,momentum=momentum)
+        lr = 1e-3
+        wd = 5e-4 #Turning off regularization for debugging
+        momentum = 0.9
 
-    test_metrics = [metrics.ConfMatrix(len(class_encoding), ignore_index=ignore_index)]
+        #As in the paper
+        optimizer = optim.SGD(net.parameters(), lr=lr,weight_decay=wd,momentum=momentum)
+        
+        # Evaluation metric
 
-    test_logger = [dl_logger.print_logger(),dl_logger.tensorboard_logger(current_analysis_name)]
+        ignore_index = list(class_encoding).index('unlabeled')
+        
+        criterion = nn.CrossEntropyLoss(ignore_index=ignore_index,weight=w_class)        
 
-    tester = test.Tester(testloader,criterion,test_metrics)
+        current_analysis_name = generate_folder_name(criterion, optimizer, single_sample,input_transform)    
+        
+        nr_epochs= 150
+            
+        if trainer is None:
+            trainer = train.Trainer(criterion,optimizer,net,single_sample=single_sample)
+        else:
+            trainer.optimizer = optimizer
+            trainer.criterion = criterion
+            trainer.net = net
+            trainer.epoch = 0
+            trainer.running_loss.reset()
+            
 
-    analysis_builder = AnalysisBuilder(trainer,tester,current_analysis_name,test_logger,single_sample=single_sample)
+        chkpt_path = current_analysis_name+"/Checkpoints"
 
-    trainer.run_epochs(trainloader,use_gpu,nr_epochs,input_transform= ctf.madden_hs,alpha=0.5)
+        if os.path.exists(chkpt_path):
+            latest_checkpoint = newest(chkpt_path)
+            trainer.load_checkpoint(latest_checkpoint)
+            trainer.epoch = int(os.path.basename(os.path.splitext(latest_checkpoint)[0])[5:])
+            trainer.optimizer = optim.SGD(trainer.model.parameters(), lr=lr,weight_decay=wd,momentum=momentum)
+
+        #Stop training if Nr epochs has been reached
+
+        nr_epochs = nr_epochs-trainer.epoch
+        print("Only {} epochs to go".format(nr_epochs))
+
+        test_metrics = [metrics.ConfMatrix(len(class_encoding), ignore_index=ignore_index)]
+
+        test_logger = [dl_logger.print_logger(),dl_logger.tensorboard_logger(current_analysis_name)]
+
+        tester = test.Tester(testloader,criterion,test_metrics)
+
+        analysis_builder = AnalysisBuilder(trainer,tester,current_analysis_name,test_logger,single_sample=single_sample)
+
+        trainer.run_epochs(trainloader,use_gpu,nr_epochs,input_transform= input_transform,alpha=0.5)
 
 
 
