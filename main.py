@@ -1,5 +1,5 @@
 #This document contains the training pipeline for a simple MNIST toy example
-# This should not stay the same 
+# This should not stay the same
 import torch
 
 import torch.nn as nn
@@ -23,7 +23,10 @@ import torchvision
 import pandas as pd
 
 class AnalysisBuilder(train.training_observer):
-    def __init__(self, trainer,tester,current_analysis_name,loggers,single_sample = False):
+
+    '''Class to handle the analysis'''
+
+    def __init__(self, trainer,tester,current_analysis_name,loggers,single_sample=False):
         super(AnalysisBuilder,self).__init__(trainer)               
         
         self.current_name = current_analysis_name
@@ -36,25 +39,22 @@ class AnalysisBuilder(train.training_observer):
             out_dict = metric.get_mean_metrics()
             for key in out_dict.keys():
                 for single_logger in self.loggers:
-                    single_logger.log("Test/"+key,out_dict[key],epoch)                    
+                    single_logger.log("Test/" + key,out_dict[key],epoch)                    
             out_dict = metric.get_per_class_accuracy()
             for key in out_dict.keys():
                 for single_logger in self.loggers:
-                    single_logger.log("Test/AccuracyClass"+key,out_dict[key],epoch) 
-            conf_mat_dir = current_analysis_name+"/ConfusionMatrices"
+                    single_logger.log("Test/AccuracyClass" + key,out_dict[key],epoch) 
+            conf_mat_dir = current_analysis_name + "/ConfusionMatrices"
             if not os.path.exists(conf_mat_dir):
                 os.mkdir(conf_mat_dir)
             mat_path = os.path.join(conf_mat_dir,"ConfMat_epoch{}".format(epoch))
             np.save(mat_path,metric.conf_metric)
-            pd.DataFrame(metric.conf_metric).to_csv(mat_path+".csv")
+            pd.DataFrame(metric.conf_metric).to_csv(mat_path + ".csv")
             metric.reset()
     
     def on_loss_calulcated(self):
         step_size = 1
-        # if tester.current_batch_nr % step_size == 0: 
-        #     for single_logger in self.loggers:
-        #         single_logger.log("Test/Loss",tester.running_loss.get_average(),(self.current_epoch-1) * tester.total_batch_nr + tester.current_batch_nr) 
-        #     tester.running_loss.reset()
+        
         
     def on_batch_completed(self,trainer):
         self.current_epoch = trainer.epoch
@@ -62,13 +62,13 @@ class AnalysisBuilder(train.training_observer):
         if trainer.current_batch_nr % step_size == 0: 
             
             for single_logger in self.loggers:
-                    single_logger.log("Train/"+"Loss",trainer.running_loss.get_average(),(trainer.epoch-1) * trainer.total_batch_nr + trainer.current_batch_nr + 1)
+                    single_logger.log("Train/" + "Loss",trainer.running_loss.get_average(),(trainer.epoch - 1) * trainer.total_batch_nr + trainer.current_batch_nr + 1)
             trainer.running_loss.reset()
 
             if not self.single_sample:
                 for metric in trainer.metrics:
                     for single_logger in self.loggers:
-                        single_logger.log("Train/"+metric.type(),metric.value(),(trainer.epoch-1) * trainer.total_batch_nr + trainer.current_batch_nr + 1)
+                        single_logger.log("Train/" + metric.type(),metric.value(),(trainer.epoch - 1) * trainer.total_batch_nr + trainer.current_batch_nr + 1)
                     metric.reset()
                 print("Batch {} completed".format(trainer.current_batch_nr))
 
@@ -81,17 +81,17 @@ class AnalysisBuilder(train.training_observer):
         if not self.single_sample:
 
             step_size_save = 5
-            if trainer.epoch % step_size_save == step_size_save-1: 
+            if trainer.epoch % step_size_save == step_size_save - 1: 
                 ckpt_name = trainer.save_checkpoint(self.current_name)                
 
             step_size = 10
-            if trainer.epoch % step_size == step_size-1: 
+            if trainer.epoch % step_size == step_size - 1: 
                 
                 tester.test_network(trainer.model,use_gpu,self.on_loss_calulcated,input_transform= input_transform,alpha=0.5)
                 self.log_test_results(trainer.epoch)
         else:
             step_size = 3000
-            if trainer.epoch % step_size == step_size-1: 
+            if trainer.epoch % step_size == step_size - 1: 
                 ckpt_name = trainer.save_checkpoint(self.current_name)
                 tester.test_network(trainer.model,use_gpu,self.on_loss_calulcated,input_transform= input_transform,alpha=0.5)
                 self.log_test_results(trainer.epoch)
@@ -123,6 +123,8 @@ def newest(path):
     return max(paths, key=os.path.getctime)
 
 def generate_folder_name(criterion, optimizer, single_sample,input_transform):
+    '''Creates a folder name base on hyperparamters'''
+
     out_name = ""
     
     out_name += type(optimizer).__name__ + "_"
@@ -130,13 +132,11 @@ def generate_folder_name(criterion, optimizer, single_sample,input_transform):
     
     for key in optimizer.param_groups[0].keys():
         if key not in 'params':
-            out_name +=  key+"_"+str(optimizer.param_groups[0][key]) + "_"
+            out_name +=  key + "_" + str(optimizer.param_groups[0][key]) + "_"
     
     out_name += type(criterion).__name__    
     
-    
-    #current_analysis_name = "run/"+datetime.now().strftime("%d%m%Y%H%M%S")     
-    current_analysis_name = "run/"+out_name
+    current_analysis_name = "run/" + out_name
 
     if input_transform == None:
         current_analysis_name += "_RGB"
@@ -144,39 +144,12 @@ def generate_folder_name(criterion, optimizer, single_sample,input_transform):
         current_analysis_name += "_Madden"
     elif input_transform == ctf.madden_hs:
         current_analysis_name += "_Madden_HS"
-    
-    #Change this
-    #current_analysis_name += "_OtherNet"
 
     if single_sample:
         current_analysis_name += "_SingleSampleTest"
     return current_analysis_name
 
-def image_tensor_to_image(img):
-    
-    to_pil = torchvision.transforms.ToPILImage()
-    pil_img = to_pil(img)
 
-    return pil_img
-   
-
-def label_tensor_to_image(lab,class_encoding):
-
-    to_pil = torchvision.transforms.ToPILImage()
-
-    out_img = torch.zeros([3,lab.shape[0],lab.shape[1]])
-
-    for j,k in enumerate(class_encoding):
-        # Get all indices for current class
-        pos = torch.where(lab == j)
-        col = class_encoding[k]
-        out_img[0,pos[0],pos[1]] = col[0]
-        out_img[1,pos[0],pos[1]] = col[1]
-        out_img[2,pos[0],pos[1]] = col[2]
-                                
-    
-    pil_img = to_pil(out_img)
-    return pil_img
 
 from matplotlib import pyplot as plt
 
@@ -184,81 +157,79 @@ import colortransforms as ctf
 
 if __name__ == '__main__':    
 
+    #Set to true to analyse a single batch
+    #This will currently not produce the correct outputs, but it will help to see wether you converge
     single_sample = False
 
+    #Get a reference to the directory where this file is locates
     outputdir = os.path.dirname(os.path.abspath(__file__))
-
     os.chdir(outputdir)
 
+    #Determine whether to use the GPU for training
     use_gpu = torch.cuda.is_available()
 
+    # Set this to ctr.madden or ctr.madden_hs for the transform
     input_transform = None
+    
 
-    for input_transform in [None]:
+    # Get input size of the netowk depeding on the color transform
+    input_size = 3
+
+    if input_transform == ctf.madden:
+        input_size = 1
         
-        input_size = 3
+    net = OwnSegNet(input_size)        
 
-        if input_transform == ctf.madden:
-            input_size = 1
+    if use_gpu:
+        net = net.cuda()
+    
+    #Load the Data
+    loaders, w_class, class_encoding,sets = dataloader.get_data_loaders(camvid_dataset,4,4,4,single_sample=single_sample)
+    trainloader, valloader, testloader = loaders  
+    test_set,val_set,train_set = sets    
+
+    lr = 1e-3
+    wd = 5e-4 
+    momentum = 0.9
+      
+    #Initialize the optimizer
+    optimizer = optim.SGD(net.parameters(), lr=lr,weight_decay=wd,momentum=momentum)    
+
+    ignore_index = list(class_encoding).index('unlabeled')
+
+    #Initialize the criterion
+    criterion = nn.CrossEntropyLoss(ignore_index=ignore_index,weight=w_class)        
+
+    #Generate a name for the current analysis
+    current_analysis_name = generate_folder_name(criterion, optimizer, single_sample,input_transform)    
         
-        net = OwnSegNet(input_size)        
+    #Set the total number of epochs
+    total_nr_epochs = 150
 
-        if use_gpu:
-            net = net.cuda()
-        trainer = None
-        
-        loaders, w_class, class_encoding,sets = dataloader.get_data_loaders(camvid_dataset,4,4,4,single_sample=single_sample)
-        trainloader, valloader, testloader = loaders  
-        test_set,val_set,train_set = sets
+    #Load a checkpoint into the trainer if it already exists
+    chkpt_path = current_analysis_name + "/Checkpoints"
 
-        label_tensor_to_image(test_set[0][1],class_encoding)
+    if os.path.exists(chkpt_path):
+        latest_checkpoint = newest(chkpt_path)
+        trainer.load_checkpoint(latest_checkpoint)
+        trainer.epoch = int(os.path.basename(os.path.splitext(latest_checkpoint)[0])[5:])
+        trainer.optimizer = optim.SGD(trainer.model.parameters(), lr=lr,weight_decay=wd,momentum=momentum)
 
-        lr = 1e-3
-        wd = 5e-4 #Turning off regularization for debugging
-        momentum = 0.9
+    #Stop training if total nr epochs has been reached
+    total_nr_epochs = total_nr_epochs - trainer.epoch
+    print("Only {} epochs to go".format(total_nr_epochs))
 
-        #As in the paper
-        optimizer = optim.SGD(net.parameters(), lr=lr,weight_decay=wd,momentum=momentum)
-        
-        # Evaluation metric
+    #Define metrics to be used during testing
+    test_metrics = [metrics.ConfMatrix(len(class_encoding), ignore_index=ignore_index)]
 
-        ignore_index = list(class_encoding).index('unlabeled')
-        
-        criterion = nn.CrossEntropyLoss(ignore_index=ignore_index,weight=w_class)        
+    #Define ways to log the output during testing
+    test_logger = [dl_logger.print_logger(),dl_logger.tensorboard_logger(current_analysis_name)]
 
-        current_analysis_name = generate_folder_name(criterion, optimizer, single_sample,input_transform)    
-        
-        nr_epochs= 150
-            
-        if trainer is None:
-            trainer = train.Trainer(criterion,optimizer,net,single_sample=single_sample)
-        else:
-            trainer.optimizer = optimizer
-            trainer.criterion = criterion
-            trainer.net = net
-            trainer.epoch = 0
-            trainer.running_loss.reset()
-            
+    #Intialize the tester
+    tester = test.Tester(testloader,criterion,test_metrics)
 
-        chkpt_path = current_analysis_name+"/Checkpoints"
+    #Feed eveything into the analysis builder which defines what to caluclate when and when to log
+    analysis_builder = AnalysisBuilder(trainer,tester,current_analysis_name,test_logger,single_sample=single_sample)
 
-        if os.path.exists(chkpt_path):
-            latest_checkpoint = newest(chkpt_path)
-            trainer.load_checkpoint(latest_checkpoint)
-            trainer.epoch = int(os.path.basename(os.path.splitext(latest_checkpoint)[0])[5:])
-            trainer.optimizer = optim.SGD(trainer.model.parameters(), lr=lr,weight_decay=wd,momentum=momentum)
-
-        #Stop training if Nr epochs has been reached
-
-        nr_epochs = nr_epochs-trainer.epoch
-        print("Only {} epochs to go".format(nr_epochs))
-
-        test_metrics = [metrics.ConfMatrix(len(class_encoding), ignore_index=ignore_index)]
-
-        test_logger = [dl_logger.print_logger(),dl_logger.tensorboard_logger(current_analysis_name)]
-
-        tester = test.Tester(testloader,criterion,test_metrics)
-
-        analysis_builder = AnalysisBuilder(trainer,tester,current_analysis_name,test_logger,single_sample=single_sample)
-
-        trainer.run_epochs(trainloader,use_gpu,nr_epochs,input_transform= input_transform,alpha=0.5)
+    #Start the trainig
+    trainer.run_epochs(trainloader,use_gpu,total_nr_epochs,input_transform= input_transform,alpha=0.5)

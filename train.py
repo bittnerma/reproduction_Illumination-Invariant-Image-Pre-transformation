@@ -16,6 +16,8 @@ class TrainingState(Enum):
    
 class Trainer(object):
 
+    ''' Object to handle training of the network'''
+
     def __init__(self,criterion,optimizer,model,metrics=[],single_sample = False):
         self.criterion = criterion
         self.optimizer = optimizer

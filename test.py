@@ -2,6 +2,9 @@ import torch
 from metrics import averager
 
 class Tester(object):
+
+    ''' Class for Testing the network'''
+
     def __init__(self,testloader,criterion,metrics):               
         self.testloader = testloader        
         self.metrics = metrics     

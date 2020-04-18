@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision.models as models
 
 #Network model used on MNIST
 class Net(nn.Module):
@@ -22,16 +23,18 @@ class Net(nn.Module):
         x = self.fc3(x)
         return x
 
-import torchvision.models as models
-vgg16 = models.vgg16(pretrained=True)
 
-#This breaks currently 
-use_gpu = torch.cuda.is_available()
 
-#Network model used on MNIST
+
 class OwnSegNet(nn.Module):
+
+    '''Pytorch implementation of SegNet'''
+
     def __init__(self,input_size):
         super(OwnSegNet, self).__init__()
+
+        self.vgg16 = models.vgg16(pretrained=True)
+
         self.enc_l1_1 = nn.Conv2d(input_size, 64, 3,padding=1)
         self.enc_l1_1_bn = nn.BatchNorm2d(64)
         self.enc_l1_2 = nn.Conv2d(64, 64, 3,padding=1)
@@ -115,7 +118,7 @@ class OwnSegNet(nn.Module):
 
         i = 0
         
-        for j,feature in enumerate(vgg16.features):
+        for j,feature in enumerate(self.vgg16.features):
             if isinstance(feature,nn.Conv2d):
                 if vgg_like_layers[i].weight.shape == feature.weight.shape and vgg_like_layers[i].bias.shape == feature.bias.shape:
                     vgg_like_layers[i].weight = feature.weight

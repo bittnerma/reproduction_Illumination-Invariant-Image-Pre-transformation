@@ -2,6 +2,7 @@ import os
 from PIL import Image
 import numpy as np
 
+# Code taken from https://github.com/davidtvs/PyTorch-ENet
 
 def get_files(folder, name_filter=None, extension_filter=None):
     """Helper function that returns the list of files in a specified folder
