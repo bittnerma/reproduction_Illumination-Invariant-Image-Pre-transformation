@@ -6,8 +6,6 @@ import torch.nn as nn
 
 from models import OwnSegNet
 
-from models import SegNet
-
 import metrics
 
 import train
