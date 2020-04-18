@@ -48,8 +48,7 @@ class AnalysisBuilder(train.training_observer):
             np.save(mat_path,metric.conf_metric)
             pd.DataFrame(metric.conf_metric).to_csv(mat_path+".csv")
             metric.reset()
-
-    #Maybe it's sufficient to calculate this at the same time as everything else
+    
     def on_loss_calulcated(self):
         step_size = 1
         # if tester.current_batch_nr % step_size == 0: 
@@ -196,14 +195,13 @@ if __name__ == '__main__':
     input_transform = None
 
     for input_transform in [None]:
-
+        
         input_size = 3
 
         if input_transform == ctf.madden:
             input_size = 1
         
-        net = OwnSegNet(input_size)
-        #net = SegNet(input_size,12)
+        net = OwnSegNet(input_size)        
 
         if use_gpu:
             net = net.cuda()
@@ -264,7 +262,3 @@ if __name__ == '__main__':
         analysis_builder = AnalysisBuilder(trainer,tester,current_analysis_name,test_logger,single_sample=single_sample)
 
         trainer.run_epochs(trainloader,use_gpu,nr_epochs,input_transform= input_transform,alpha=0.5)
-
-
-
-  
