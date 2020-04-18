@@ -10,12 +10,16 @@ class Tester(object):
         self.criterion = criterion
         self.running_loss = averager()
         
-    def test_step(self,data, net, use_gpu,on_loss_updated):
-        images, labels = data
+    def test_step(self,data, net, use_gpu,on_loss_updated,input_transform=None,*args,**kwargs):
+        inputs, labels = data
+
+        if input_transform is not None:
+            inputs = input_transform(inputs,*args,**kwargs)  
+
         if use_gpu:
-            images = images.cuda()
+            inputs = inputs.cuda()
             labels = labels.cuda()
-        raw,outputs = net(images)
+        raw,outputs = net(inputs)
 
         self.loss = self.criterion(raw, labels)                
 
@@ -28,7 +32,7 @@ class Tester(object):
 
         
 
-    def test_network(self,net,use_gpu,on_loss_updated):        
+    def test_network(self,net,use_gpu,on_loss_updated,input_transform=None,*args,**kwargs):        
         
         self.running_loss.reset()
         self.total_batch_nr = len(self.testloader)
@@ -36,7 +40,7 @@ class Tester(object):
         with torch.no_grad():
             for i,data in enumerate(self.testloader):
                 self.current_batch_nr = i
-                self.test_step(data, net, use_gpu,on_loss_updated)
+                self.test_step(data, net, use_gpu,on_loss_updated,input_transform,*args,**kwargs)
 
 
 
